@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Kite Plot</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+  </head>
+  <body>
+  
+  <script type="text/javascript">
+    async function autorun()
+    {
+        // Import the data
+        const data = await d3.csv("./kitedata.csv", d3.autoType);
+
+        // Define the chart area
+        const margin = ({top: 20, right: 0, bottom: 30, left: 100});
+        const width = 600;
+        const height = 400;
+
+        // Define the X axis
+        const x = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.Distance)])
+                .range([margin.left, width - margin.right]);
+
+        const xAxis = g => g
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(width / 80))
+            .call(g => g.select(".domain").remove());
+
+
+        // Define the Y axes
+        // A cardinal axis is used to separate the species in the y direction
+        const species = (() => {
+            let species = d3.keys(data[0])
+            species.shift()
+            return species
+        })();
+
+        const yspecies = d3.scaleOrdinal()
+            .domain(species)
+            .range(d3.range(margin.top,height - margin.bottom,height/species.length)); //This range needs fixing because the top kite is cropped
+
+        // The yAxis function draws the axis that labels the species
+        yAxis = g => g
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(yspecies).ticks(10))
+            .call(g => g.select(".domain").remove())
+
+        // A linear axis sets the vertical axis for the count of each species
+        y = d3.scaleLinear()
+            .domain([-50, 50])  //Hardcoded range - should be +/- max of input data or normalised input data
+            .range([-height/species.length,height/species.length])
+
+        // Create the plot functions
+        const areas = (() => {
+            let areas = [];
+            species.forEach(s => {
+                areas[s]=d3.area()
+                .x(d => x(d.Distance))
+                .y0(d => y(-d[s]))
+                .y1(d => y(d[s]))}
+                )
+            return areas
+        })();
+
+        // Create the chart
+        const svg = d3.select("body")
+            .append("svg")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            ;
+
+        for (const [species, colour] of [
+            ["Daisies", "#008"],
+            ["Dinosaurs", "#080"],
+            ["Dolphins", "#800"]
+        ]) {
+            svg.append("path")
+                .attr("d", areas[species](data))
+                .attr("fill", colour)
+                .attr("transform", `translate(0,${yspecies(species)})`);
+        }
+
+        for (const axis of [xAxis, yAxis]) {
+            svg.append("g").call(axis);
+        }
+    }
+
+    if (document.addEventListener) document.addEventListener("DOMContentLoaded", autorun, false);
+    else if (document.attachEvent) document.attachEvent("onreadystatechange", autorun);
+    else window.onload = autorun;
+  </script>
+  </body>
+</html>
