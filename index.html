@@ -31,11 +31,7 @@
 
         // Define the Y axes
         // A cardinal axis is used to separate the species in the y direction
-        const species = (() => {
-            let species = d3.keys(data[0])
-            species.shift()
-            return species
-        })();
+        const species = d3.keys(data[0]).slice(1);
 
         const yspecies = d3.scaleOrdinal()
             .domain(species)
@@ -70,15 +66,16 @@
             .attr("viewBox", `0 0 ${width} ${height}`)
             ;
 
-        for (const [species, colour] of [
-            ["Daisies", "#008"],
-            ["Dinosaurs", "#080"],
-            ["Dolphins", "#800"]
-        ]) {
+        const colours = ["#008", "#080", "#800", "#004", "#040", "#400"];
+
+        for (let i = 0; i < species.length; i++) {
+            const speciesName = species[i];
+            const colour = colours[i];
+
             svg.append("path")
-                .attr("d", areas[species](data))
+                .attr("d", areas[speciesName](data))
                 .attr("fill", colour)
-                .attr("transform", `translate(0,${yspecies(species)})`);
+                .attr("transform", `translate(0,${yspecies(speciesName)})`);
         }
 
         for (const axis of [xAxis, yAxis]) {
